@@ -14,14 +14,19 @@ class App(QWidget):
 
 	def initUI(self):
 		self.setWindowTitle('Data Recorder')
-
+		self.resize(200, 200)
 		startBtn = QPushButton('Start', self)
 		stopBtn = QPushButton('Stop', self)
+		quitBtn = QPushButton('Quit', self)
+		nameBtn = QPushButton('Enter Filename', self)
 
 		stopBtn.move(80,0)
-
+		quitBtn.move(0, 40)
+		nameBtn.move(0, 80)
 		startBtn.clicked.connect(self.on_click_Start)
 		stopBtn.clicked.connect(self.on_click_Stop)
+		quitBtn.clicked.connect(self.on_click_Quit)
+		nameBtn.clicked.connect(self.on_click_Name)
 
 		self.show()
 
@@ -32,6 +37,13 @@ class App(QWidget):
 	def on_click_Stop(self):
 		print('stop')
 		self.redis_client.rpush('sensor', 'STOP')
+	def on_click_Quit(self):
+		print('quit')
+		self.redis_client.rpush('sensor', 'QUIT')
+	def on_click_Name(self):
+		print('name')
+		self.redis_client.rpush('sensor', 'NAME')
+
 
 
 if __name__ == '__main__':
