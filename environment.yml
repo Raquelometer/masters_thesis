@@ -1,0 +1,15 @@
+name: test-env
+dependencies:
+- python = 2.7
+- matplotlib
+- pyserial
+- pip
+- pyqt
+- sys
+- redis
+- redis-py
+- supervisor
+- csv
+- pip:
+    - pyosc
+    - threespace
