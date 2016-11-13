@@ -27,12 +27,12 @@ def get_comport():
 		print ("Device not found")
 		return None
 
-def data_to_csv(sample, opened, name):
+def data_to_csv(sample, opened, name, sample_count):
 	if not opened:
 		with open(name, 'w') as batch_data:
 		
 			#Declare fieldnames
-			fieldnames = ['q1','q2','q3','q4','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
+			fieldnames = ['count','q1','q2','q3','q4','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
 
 			#Set field names in the CSV file
 			writer = csv.DictWriter(batch_data, fieldnames = fieldnames)
@@ -41,25 +41,32 @@ def data_to_csv(sample, opened, name):
 			writer.writeheader()
 
 			# write sample to the file
-			writer.writerow({'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]})
+			writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]})
 	else:
 		with open(name, 'a') as batch_data:
 
 			writer = csv.writer(batch_data)
-
-			writer.writerow(sample)
+			tuple_count = (sample_count,)
+			sample_withcount = tuple_count + sample
+			writer.writerow(sample_withcount)
 
 def main(redis_client):
+
 	listening = True
 	opened = False
+
+	# These variables determine the filename scheme
+	# Counter variable keeps track of number of csv files stored per session
 	subject = ''
 	gesture_type = ''
 	count = 0
+	sample_count = 0
 
+	# connect sensor to port on machine
 	filter_flag = ts_api.TSS_FIND_ALL_KNOWN^ts_api.TSS_FIND_DNG
 	com_port = get_comport()
 	device = ts_api.TSUSBSensor(com_port=com_port)
-	# need while true?
+	
 	while listening:
 
 		key, message = redis_client.blpop('sensor')
@@ -92,7 +99,13 @@ def main(redis_client):
 
 				#disable magnetometer
 				device.setCompassEnabled(enabled=False)
-				device.setStreamingSlots(slot0='getTaredOrientationAsQuaternion')
+
+				#set slots for quaternion and raw batch data
+				device.setStreamingSlots(
+					slot0='getTaredOrientationAsQuaternion', 
+					slot1='getCorrectedAccelerometerVector', 
+					slot2='getCorrectedGyroRate')
+
 				print("==================================================")
 				print("Getting the streaming batch data.")
 
@@ -112,13 +125,17 @@ def main(redis_client):
 						listening = False
 						print("Device closed. Session ended")
 					else:
+
 						# write batch data to csv file here
 						if count < 10:
 							countstr = '0' + str(count)
 						filename = subject + '_' + gesture_type + countstr + '.csv'
 						sample = device.getStreamingBatch()
-						data_to_csv(sample, opened, filename)
+						
+						data_to_csv(sample, opened, filename, sample_count)
+						sample_count = sample_count + 1
 						opened = True
+
 						print(sample)
 						print("=======================================\n")
 

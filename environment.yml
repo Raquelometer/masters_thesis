@@ -8,7 +8,6 @@ dependencies:
 - sys
 - redis
 - redis-py
-- supervisor
 - csv
 - pip:
     - pyosc

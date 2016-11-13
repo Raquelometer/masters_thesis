@@ -7,14 +7,17 @@ from PyQt5.QtGui import *
 
 
 class App(QWidget):
+	
 	def __init__(self, redis_client):
 		self.redis_client = redis_client
 		super(QWidget, self).__init__()
 		self.initUI()
 
 	def initUI(self):
+
 		self.setWindowTitle('Data Recorder')
 		self.resize(200, 200)
+
 		startBtn = QPushButton('Start', self)
 		stopBtn = QPushButton('Stop', self)
 		quitBtn = QPushButton('Quit', self)
@@ -23,6 +26,7 @@ class App(QWidget):
 		stopBtn.move(80,0)
 		quitBtn.move(0, 40)
 		nameBtn.move(0, 80)
+
 		startBtn.clicked.connect(self.on_click_Start)
 		stopBtn.clicked.connect(self.on_click_Stop)
 		quitBtn.clicked.connect(self.on_click_Quit)
@@ -52,27 +56,3 @@ if __name__ == '__main__':
 
 	ex = App(redis_client)
 	sys.exit(app.exec_())
-
-"""
-
-app = QApplication(sys.argv)
-w = QWidget()
-w.setWindowTitle('Stop and start')
-
-btn = QPushButton('Stop', w)
-btn2 = QPushButton('Start', w)
-
-btn.move(0, 30)
-
-@pyqtSlot()
-def on_click_Stop():
-	print('clicked')
-def on_click_Start():
-	print('start')
-
-btn.clicked.connect(on_click_Stop)
-btn2.clicked.connect(on_click_Start)
-
-w.show()
-app.exec_()
-"""
