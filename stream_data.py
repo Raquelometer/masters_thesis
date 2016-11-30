@@ -118,6 +118,7 @@ def main(redis_client):
 						#device.close()
 						streaming = False
 						count = count + 1
+						sample_count = 0
 						#listening = False
 						#print("Device closed")
 					elif message == 'QUIT':
