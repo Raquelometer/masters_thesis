@@ -36,16 +36,16 @@ def main():
 	q4_series = pd.Series(df['q4'])
 	df_quat = pd.DataFrame( {'q1' : q1_series, 'q2' : q2_series, 'q3' : q3_series, 'q4' : q4_series})
 
-	"""
+	
 
 	df['theta'] = df.apply(lambda row: quat_to_euler_theta(row), axis = 1)
 	df['phi'] = df.apply(lambda row: quat_to_euler_phi(row), axis = 1)
 	df['psi'] = df.apply(lambda row: quat_to_euler_psi(row), axis =1)
-
+	"""
 	#df_euler = df_quat[['theta', 'phi', 'psi']]
 	fig, axes = plt.subplots(nrows=3, ncols=1)
-	accel_to_plot = ['AccelRawX', 'AccelRawY', 'AccelRawZ']
-	gyro_to_plot = ['GyroRawX', 'GyroRawY', 'GyroRawZ']
+	accel_to_plot = ['AccelX', 'AccelY', 'AccelZ']
+	gyro_to_plot = ['GyroX', 'GyroY', 'GyroZ']
 	euler_to_plot = ['theta', 'phi', 'psi']
 
 	#df_accel.plot(ax=axes[0])

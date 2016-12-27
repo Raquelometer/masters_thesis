@@ -41,7 +41,7 @@ def data_to_csv(sample, opened, name, sample_count):
 			writer.writeheader()
 
 			# write sample to the file
-			writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]})
+			writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]}, )
 	else:
 		with open(name, 'a') as batch_data:
 
@@ -100,7 +100,9 @@ def main(redis_client):
 				#disable magnetometer
 				device.setCompassEnabled(enabled=False)
 
-				#set slots for quaternion and raw batch data
+				#set slots for quaternion and raw batch data - accel in units of g
+				# gyro is in rad/sec
+				#try getFiltOrientEuler and compare to quaternion calculations
 				device.setStreamingSlots(
 					slot0='getTaredOrientationAsQuaternion', 
 					slot1='getCorrectedAccelerometerVector', 
@@ -119,6 +121,7 @@ def main(redis_client):
 						streaming = False
 						count = count + 1
 						sample_count = 0
+						opened = False
 						#listening = False
 						#print("Device closed")
 					elif message == 'QUIT':
