@@ -32,8 +32,8 @@ def data_to_csv(sample, opened, name, sample_count):
 		with open(name, 'w') as batch_data:
 		
 			#Declare fieldnames
-			fieldnames = ['count','q1','q2','q3','q4','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
-
+			#fieldnames = ['count','q1','q2','q3','q4','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
+			fieldnames = ['time','pitch','yaw','roll','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
 			#Set field names in the CSV file
 			writer = csv.DictWriter(batch_data, fieldnames = fieldnames)
 
@@ -41,7 +41,10 @@ def data_to_csv(sample, opened, name, sample_count):
 			writer.writeheader()
 
 			# write sample to the file
-			writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]}, )
+			#writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]}, )
+			writer.writerow({'time' : sample_count, 'pitch' : sample[0], 'yaw' : sample[1], 'roll' : sample[2], 
+				'AccelRawX' : sample[3], 'AccelRawY' : sample[4], 'AccelRawZ' : sample[5],  
+				'GyroRawX' : sample[6], 'GyroRawY' : sample[7], 'GyroRawZ' : sample[8]})
 	else:
 		with open(name, 'a') as batch_data:
 
@@ -100,16 +103,25 @@ def main(redis_client):
 				#disable magnetometer
 				device.setCompassEnabled(enabled=False)
 
+				#Fix orientation
+				device.setAxisDirections(ts_api.generateAxisDirections("YZX", neg_z = True))
+
+
+				#device.setDesiredUpdateRate(update_rate=20)
+				
 				#set slots for quaternion and raw batch data - accel in units of g
 				# gyro is in rad/sec
 				#try getFiltOrientEuler and compare to quaternion calculations
 				device.setStreamingSlots(
-					slot0='getTaredOrientationAsQuaternion', 
+					slot0='getUntaredOrientationAsEulerAngles', 
 					slot1='getCorrectedAccelerometerVector', 
 					slot2='getCorrectedGyroRate')
 
 				print("==================================================")
 				print("Getting the streaming batch data.")
+
+				sample = device.getStreamingBatch()
+				offset = sample[1]
 
 				while streaming:
 

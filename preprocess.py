@@ -50,6 +50,9 @@ def quat_to_euler_psi(row):
 	denom = 1 - 2 * (pow(row['q2'], 2) + pow(row['q3'], 2))
 	return math.degrees(math.atan2(num, denom))
 
+# Euler Radian to Degrees
+def pitch_degrees(row):
+	return math.degrees(row['pitch'])
 
 def reorient_accel_x(row):
 	return row['AccelRawZ']
@@ -80,9 +83,11 @@ def main():
 
 	# Add Euler angles
 
-	df['theta'] = df.apply(lambda row: quat_to_euler_theta(row), axis = 1)
-	df['phi'] = df.apply(lambda row: quat_to_euler_phi(row), axis = 1)
-	df['psi'] = df.apply(lambda row: quat_to_euler_psi(row), axis =1)
+	df['pitch_deg'] = df.apply(lambda row: pitch_degrees(row), axis = 1)
+
+	#df['theta'] = df.apply(lambda row: quat_to_euler_theta(row), axis = 1)
+	#df['phi'] = df.apply(lambda row: quat_to_euler_phi(row), axis = 1)
+	#df['psi'] = df.apply(lambda row: quat_to_euler_psi(row), axis =1)
 
 	# Re-orient accelerometer data - in g's
 
