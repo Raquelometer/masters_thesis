@@ -11,9 +11,11 @@ c = OSC.OSCClient()
 c.connect(('127.0.0.1', 7400))
 oscmsg = OSC.OSCMessage()
 gesture = OSC.OSCMessage()
+gesNum = OSC.OSCMessage()
 
 oscmsg.setAddress("/startup")
 gesture.setAddress("/gesType")
+gesNum.setAddress("/gesNum")
 
 filter_flag = ts_api.TSS_FIND_ALL_KNOWN^ts_api.TSS_FIND_DNG
 com_port = "/dev/cu.usbmodem1411"
@@ -30,7 +32,14 @@ if device is not None:
 	#							slot2='getButtonState')
 	#device.setStreamingSlots(   slot0='getTaredOrientationAsQuaternion')
 	#device.setStreamingSlots( slot0 = 'getAllRawComponentSensorData')
-	device.setStreamingSlots( slot0 = 'getUntaredOrientationAsEulerAngles')
+
+
+	#disable magnetometer
+	device.setCompassEnabled(enabled=False)
+
+	#Fix orientation
+	device.setAxisDirections(ts_api.generateAxisDirections("YZX", neg_z = True))
+	device.setStreamingSlots( slot0 = 'getUntaredOrientationAsEulerAngles', slot1 = 'getCorrectedGyroRate')
 	
 	## Now we can start getting the streaming batch data from the device.
 	print("==================================================")
@@ -38,7 +47,14 @@ if device is not None:
 	start_time = time.clock()
 	roll_prev = 0
 	num_samples = 0
-	while time.clock() - start_time < 3:
+	backOrFront = False
+	delayTrack = 0;
+
+	while time.clock() - start_time < 5:
+
+		
+		
+		currMinPitch = 0;
 		num_samples += 1
 		print(device.getStreamingBatch())
 		point1 = device.getStreamingBatch()
@@ -48,8 +64,8 @@ if device is not None:
 		num2 = point1[1]
 		num3 = point1[2]
 
-		if roll_prev > 0 and num3 < 0:
-			num3 = roll_prev
+		#if roll_prev > 0 and num3 < 0:
+			#num3 = roll_prev
 
 		#if roll_prev < 0 and num3 > 0:
 			#num3 = roll_prev
@@ -68,33 +84,123 @@ if device is not None:
 
 		#if num < -.8 and num3 > 2.0:
 
-		if abs(num - num3) <= 0.25 and num < 0:
+		#if abs(num - num3) <= 0.1 and num < 0:
 		#if num < 0 and num3 <0:
-			gesture.append("sideTap")
+
+		if num < -0.6:
+			backOrFront = True
+			"""
+			gesture.append("backOrFront")
 			c.send(gesture)
 			gesture.pop(-1)
-			time.sleep(0.5)
+			"""
 
-		elif num < -1.2 and num3 > 0.6:
+		if point1[5] < -5.5:
+			gesture.append("inTap")
+			gesNum.append(1)
+			c.send(gesture)
+			c.send(gesNum)
+			gesture.pop(-1)
+			gesNum.pop(-1)
+			time.sleep(0.3)
+
+		if point1[5] > 6.0:
+			gesture.append("sideTap")
+			gesNum.append(2)
+			c.send(gesture)
+			c.send(gesNum)
+			gesture.pop(-1)
+			gesNum.pop(-1)
+			time.sleep(0.4)
+
+		# daphna if num > 0.2:
+		#kiran
+		if num > 0.05 and num > num3:
+			gesture.append("heelTap")
+			gesNum.append(3)
+			c.send(gesture)
+			c.send(gesNum)
+			gesture.pop(-1)
+			gesNum.pop(-1)
+			time.sleep(0.5)
+		# Daphna
+		#if num3 < -0.7 and num > -0.2:
+		# us absolute value????
+		# Kiran
+		#if num3 < -0.7 and num3 < num:
+		if abs(num3) > 1.2 and num > -1:
+			gesture.append("sideRoll")
+			gesNum.append(4)
+			c.send(gesture)
+			c.send(gesNum)
+			gesture.pop(-1)
+			gesNum.pop(-1)
+			time.sleep(0.5)
+		"""
+		if num3 > 1:
+			gesture.append("sideKick")
+			c.send(gesture)
+			gesture.pop(-1)
+			time.sleep(0.4)
+		"""
+
+		"""
+		if num < -1.2:
 			gesture.append("tapBack")
 			c.send(gesture)
 			gesture.pop(-1)
-			#put in a delay?
 			time.sleep(0.5)
+			"""
+
+
+		if(backOrFront):
+			#if point1[3] < -5 and num < -1.2 and num3 > 0.5:
+			delayTrack += 1
+
+			if delayTrack >= 30:
+
+				if num < -1.2:
+					gesture.append("tapBack")
+					c.send(gesture)
+					gesture.pop(-1)
+					time.sleep(0.5)
+
+
+				elif num < -0.6:
+					gesture.append("tapFront")
+					c.send(gesture)
+					gesture.pop(-1)
+
+				delayTrack = 0
+				backOrFront = False
+
+
+
+			"""
+			else:	
+				if currMinPitch < -1.2 and num3 > 0.5:
+				#if point1[3] < -5.0:
+					gesture.append("tapBack")
+					c.send(gesture)
+					gesture.pop(-1)
+					#put in a delay?
+					time.sleep(0.5)
+					currMinPitch = 0
 
 		
-		elif num < -.79 and num3 < 0.25:
-			# is it really front tap, or is it on the
-			# way to a back tap
-			gesture.append("tapFront")
-			c.send(gesture)
-			gesture.pop(-1)
-			#time.sleep(0.3)
+				elif currMinPitch < -.78 and num3 < 0.25:
+					# is it really front tap, or is it on the
+					# way to a back tap
+					# try using gyro 
+					gesture.append("tapFront")
+					c.send(gesture)
+					gesture.pop(-1)
+					#time.sleep(0.3)
+					currMinPitch = 0
+			backOrFront = False
+			"""
 
-		if num > 0.2:
-			gesture.append("heelTap")
-			c.send(gesture)
-			gesture.pop(-1)
+		
 		
 		#elif num3 < 0 and num < 0 and num3 < num and num > -1.3:
 	
