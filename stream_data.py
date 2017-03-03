@@ -33,7 +33,7 @@ def data_to_csv(sample, opened, name, sample_count):
 		
 			#Declare fieldnames
 			#fieldnames = ['count','q1','q2','q3','q4','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
-			fieldnames = ['time','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ']
+			fieldnames = ['time','AccelRawX','AccelRawY','AccelRawZ','GyroRawX','GyroRawY','GyroRawZ', 'Pitch', 'Yaw', 'Roll']
 			#Set field names in the CSV file
 			writer = csv.DictWriter(batch_data, fieldnames = fieldnames)
 
@@ -44,7 +44,8 @@ def data_to_csv(sample, opened, name, sample_count):
 			#writer.writerow({'count' : sample_count, 'q1' : sample[0], 'q2' : sample[1], 'q3' : sample[2], 'q4' : sample[3]}, )
 			writer.writerow({'time' : sample_count, 
 				'AccelRawX' : sample[0], 'AccelRawY' : sample[1], 'AccelRawZ' : sample[2],  
-				'GyroRawX' : sample[3], 'GyroRawY' : sample[4], 'GyroRawZ' : sample[5]})
+				'GyroRawX' : sample[3], 'GyroRawY' : sample[4], 'GyroRawZ' : sample[5],
+				'Pitch' : sample[6], 'Yaw' : sample[7], 'Roll' : sample[8]})
 	else:
 		with open(name, 'a') as batch_data:
 
@@ -52,6 +53,7 @@ def data_to_csv(sample, opened, name, sample_count):
 			tuple_count = (sample_count,)
 			sample_withcount = tuple_count + sample
 			writer.writerow(sample_withcount)
+
 
 def main(redis_client):
 
@@ -107,7 +109,11 @@ def main(redis_client):
 				device.setAxisDirections(ts_api.generateAxisDirections("YZX", neg_z = True))
 
 				#Fix rate
-				device.setStreamingTiming(interval = 20000, duration = 0xFFFFFFFF, delay = 0)
+				device.setStreamingTiming(interval = 10000, duration = 0xFFFFFFFF, delay = 0)
+
+				#Start streaming
+				device.startStreaming()
+				device.startRecordingData()
 
 				#device.setDesiredUpdateRate(update_rate=20)
 				
@@ -116,17 +122,20 @@ def main(redis_client):
 				#try getFiltOrientEuler and compare to quaternion calculations
 				device.setStreamingSlots( 
 					slot0='getCorrectedAccelerometerVector', 
-					slot1='getCorrectedGyroRate')
+					slot1='getCorrectedGyroRate',
+					slot2 = 'getUntaredOrientationAsEulerAngles')
 
 				print("==================================================")
-				print("Getting the streaming batch data.")
+				print("Getting the streaming data.")
 
-				sample = device.getStreamingBatch()
-				offset = sample[1]
+				#sample = device.getStreamingBatch()
+				#offset = sample[1]
+				sample = device.getLatestStreamData(20000)[1]
 
 				while streaming:
 
 					message = redis_client.lpop('sensor')
+					#sample = device.getLatestStreamData(40000)
 
 					if message == 'STOP':
 						#close device
@@ -147,7 +156,7 @@ def main(redis_client):
 						if count < 10:
 							countstr = '0' + str(count)
 						filename = subject + '_' + gesture_type + countstr + '.csv'
-						sample = device.getStreamingBatch()
+						sample = device.getLatestStreamData(20000)[1]
 						
 						data_to_csv(sample, opened, filename, sample_count)
 						sample_count = sample_count + 1

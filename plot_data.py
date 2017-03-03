@@ -10,14 +10,14 @@ def main():
 	df = pd.DataFrame.from_csv(filename)
 
 	#df_euler = df_quat[['theta', 'phi', 'psi']]
-	fig, axes = plt.subplots(nrows=2, ncols=1)
+	fig, axes = plt.subplots(nrows=3, ncols=1)
 	#accel_to_plot = ['AccelX', 'AccelY', 'AccelZ']
 	#gyro_to_plot = ['GyroX', 'GyroY', 'GyroZ']
 
 	accel_to_plot = ['AccelRawX', 'AccelRawY', 'AccelRawZ']
 	gyro_to_plot = ['GyroRawX', 'GyroRawY', 'GyroRawZ']
 	
-	#euler_to_plot = ['pitch', 'yaw', 'roll']
+	euler_to_plot = ['Pitch', 'Yaw', 'Roll']
 
 	#df_accel.plot(ax=axes[0])
 	#df_gyro.plot(ax=axes[1])
@@ -27,7 +27,7 @@ def main():
 
 	df.ix[:, accel_to_plot].plot(ax=axes[0])
 	df.ix[:, gyro_to_plot].plot(ax=axes[1])
-	#df.ix[:, euler_to_plot].plot(ax=axes[2])
+	df.ix[:, euler_to_plot].plot(ax=axes[2])
 
 	leg = plt.legend()
 	if leg:
