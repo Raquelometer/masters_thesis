@@ -1,13 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+import glob
 
 SIGMAx3 = 0.03
 deltaT = 1.0/100.0
 
 def reset(attribute_list):
-	for elt in attribute_list:
-		elt = 0
+	for index, elt in enumerate(attribute_list):
+		attribute_list[index] = 0
 
 def integrate(row, vals, gyro_axis):
 
@@ -44,6 +45,29 @@ def main():
 	y_vals = x_vals
 	z_vals = x_vals
 
+	'''
+	
+	files = glob.glob('subjectTests/01/Raw/*.csv')
+
+	for csvfile in files:
+		
+		df = pd.DataFrame.from_csv(csvfile)
+
+
+		df['theta_x'] = df.apply(lambda row: integrate(row, x_vals, 'GyroRawX'), axis = 1)
+		df['theta_y'] = df.apply(lambda row: integrate(row, y_vals, 'GyroRawY'), axis = 1)
+		df['theta_z'] = df.apply(lambda row: integrate(row, z_vals, 'GyroRawZ'), axis = 1)
+
+		filename_list = csvfile.rsplit('.')
+		new_filename = filename_list[0] + "_PRC" + ".csv"
+		df.to_csv(new_filename)
+
+		reset(x_vals)
+		reset(y_vals)
+		reset(z_vals)
+
+
+	'''
 	filename = raw_input('Enter filename: ')
 	df = pd.DataFrame.from_csv(filename)
 
@@ -52,7 +76,10 @@ def main():
 	df['theta_y'] = df.apply(lambda row: integrate(row, y_vals, 'GyroRawY'), axis = 1)
 	df['theta_z'] = df.apply(lambda row: integrate(row, z_vals, 'GyroRawZ'), axis = 1)
 
-	df.to_csv(filename)
+	filename_list = filename.rsplit('.')
+	new_filename = filename_list[0] + "_PRC" + ".csv"
+	df.to_csv(new_filename)
+	
 
 if __name__ == '__main__':
 	main()

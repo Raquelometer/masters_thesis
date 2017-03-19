@@ -25,7 +25,7 @@ def main(redis_client):
 	filter_flag = ts_api.TSS_FIND_ALL_KNOWN^ts_api.TSS_FIND_DNG
 
 	# get comport???
-	com_port = "/dev/cu.usbmodem1411"
+	com_port = "/dev/cu.usbmodem1421"
 
 	device = ts_api.TSUSBSensor(com_port=com_port)
 
@@ -84,6 +84,8 @@ def main(redis_client):
 
 				integrator_YAW = 0
 
+				mr_check = False
+
 				deltaT = 0
 				prevTime = time.time()
 
@@ -113,8 +115,75 @@ def main(redis_client):
 					gyro_x = point1[0]
 					gyro_y = point1[1]
 					gyro_z = point1[2]
-				
-				
+					
+					if abs(gyro_z) > 0.03 and not streamYaw:
+					#if gyro_z < -0.03 and not streamYaw:
+						integrating_z = True
+
+					if integrating_z:
+
+						integrator_z += gyro_z * deltaT
+						degrees_z = math.degrees(integrator_z)
+
+						if degrees_z < -5:
+							mr_check = True
+							#print('CHECKING')
+
+						if mr_check:
+							if gyro_z > 0.03:
+
+								print("MAXIMUM IS: ")
+								print(degrees_z)
+
+								# set using heelTap and sideRoll thresholds?
+								if degrees_z <= -30 and abs(degrees_y) < 25 and abs(degrees_x) < 30:
+									gesture.append("medialRot")
+									gesNum.append(2)
+									c.send(gesture)
+									c.send(gesNum)
+									gesture.pop(-1)
+									gesNum.pop(-1)
+									time.sleep(0.4)
+									print('MR DETECTED')
+
+								mr_check = False
+
+								integrator_z = 0
+								integrating_z = False
+
+								integrator_y = 0
+								integrating_y = False
+
+								integrator_x = 0
+								integrating_x = False
+
+						'''
+						if mr_check and degrees_z > -5 and degrees_z < 2:
+
+							mr_check = False
+
+							integrator_z = 0
+							integrating_z = False
+
+							integrator_y = 0
+							integrating_y = False
+
+							integrator_x = 0
+							integrating_x = False
+
+							gesture.append("medialRot")
+							gesNum.append(2)
+							c.send(gesture)
+							c.send(gesNum)
+							gesture.pop(-1)
+							gesNum.pop(-1)
+							time.sleep(0.4)
+							print('MR DETECTED')
+						'''
+
+					#if abs(gyro_z) < 0.03:
+						#integrating_z = False
+					"""
 					if gyro_z > 6.0 and not streamYaw:
 						gesture.append("sideTap")
 						gesNum.append(2)
@@ -122,17 +191,28 @@ def main(redis_client):
 						c.send(gesNum)
 						gesture.pop(-1)
 						gesNum.pop(-1)
+
 						time.sleep(0.4)
-				
+					"""
+
 					if abs(gyro_y) > 0.03:
 						integrating_y = True
 
 					if integrating_y:
 						integrator_y += gyro_y * deltaT
 						degrees_y = math.degrees(integrator_y)
-						if degrees_y > 45:
+						# check z as well? is this less ambiguous?
+						if degrees_y > 30:
+
 							integrator_y = 0
 							integrating_y = False
+
+							integrator_z = 0
+							integrating_z = False
+
+							integrator_x = 0
+							integrating_x = False
+
 							gesture.append("heelTap")
 							gesNum.append(3)
 							c.send(gesture)
@@ -141,13 +221,20 @@ def main(redis_client):
 							gesNum.pop(-1)
 							time.sleep(0.5)
 							streamYaw = not streamYaw
-					
 
+					if integrating_z and abs(gyro_z) < 0.03:
+						if not mr_check:
+							integrating_z = False
+							integrator_z = 0
+							print('integrator_z CLEARED')
+					
+					# Reset here at zero crossings? Do I need this?
 					if integrating_y and abs(gyro_y) < 0.03:
 						integrating_y = False
-						print(math.degrees(integrator_y))
+						#print(math.degrees(integrator_y))
 						integrator_y = 0
-						print("===============")
+						#print("===============")
+						print('integrator_y CLEARED')
 				
 					if abs(gyro_x) > 0.03:
 						if not streamYaw:
@@ -156,9 +243,17 @@ def main(redis_client):
 					if integrating_x:
 						integrator_x += gyro_x * deltaT
 						degrees_x = math.degrees(integrator_x)
-						if degrees_x > 60:
+						if degrees_x > 50:
+
 							integrator_x = 0
 							integrating_x = False
+
+							integrator_z = 0
+							integrating_z = False
+
+							integrator_y = 0
+							integrating_y = False
+
 							gesture.append("sideRoll")
 							gesNum.append(4)
 							c.send(gesture)
@@ -171,9 +266,10 @@ def main(redis_client):
 
 					if integrating_x and abs(gyro_x) < 0.03:
 						integrating_x = False
-						print(math.degrees(integrator_x))
+						#print(math.degrees(integrator_x))
 						integrator_x = 0
-						print("===============")
+						print('integrator_x CLEARED')
+						#print("===============")
 
 					if not streamYaw:
 						integrator_YAW = 0
