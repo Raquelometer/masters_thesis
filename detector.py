@@ -84,7 +84,10 @@ def main(redis_client):
 
 				integrator_YAW = 0
 
+				curr_degrees_z = 0
+
 				mr_check = False
+				diff_check = 0
 
 				deltaT = 0
 				prevTime = time.time()
@@ -126,36 +129,65 @@ def main(redis_client):
 						degrees_z = math.degrees(integrator_z)
 
 						if degrees_z < -5:
+
 							mr_check = True
 							#print('CHECKING')
 
 						if mr_check:
+
 							if gyro_z > 0.03:
 
-								print("MAXIMUM IS: ")
-								print(degrees_z)
+								#print("MAXIMUM IS: ")
+								#print(degrees_z)
 
 								# set using heelTap and sideRoll thresholds?
-								if degrees_z <= -30 and abs(degrees_y) < 25 and abs(degrees_x) < 30:
-									gesture.append("medialRot")
-									gesNum.append(2)
-									c.send(gesture)
-									c.send(gesNum)
-									gesture.pop(-1)
-									gesNum.pop(-1)
-									time.sleep(0.4)
-									print('MR DETECTED')
+								if degrees_z <= -30 and abs(degrees_y) < 25 and abs(degrees_x) < 30 and not diff_check:
 
-								mr_check = False
+									curr_degrees_z = degrees_z
+									diff_check = 1
 
-								integrator_z = 0
-								integrating_z = False
+								if diff_check > 0:
 
-								integrator_y = 0
-								integrating_y = False
+									diff_check = diff_check + 1
 
-								integrator_x = 0
-								integrating_x = False
+									if diff_check > 12 and abs(degrees_z - curr_degrees_z) > 8:
+
+										mr_check = False
+										diff_check = 0
+										integrator_z = 0
+										integrating_z = False
+
+										integrator_y = 0
+										integrating_y = False
+
+										integrator_x = 0
+										integrating_x = False
+
+										gesture.append("medialRot")
+										gesNum.append(2)
+										c.send(gesture)
+										c.send(gesNum)
+										gesture.pop(-1)
+										gesNum.pop(-1)
+										time.sleep(0.4)
+										print('MR DETECTED')
+
+									elif diff_check > 10 and abs(degrees_z - curr_degrees_z) < 8:
+
+										print('NO MR DETECTED')
+
+										mr_check = False
+
+										diff_check = 0
+
+										integrator_z = 0
+										integrating_z = False
+
+										integrator_y = 0
+										integrating_y = False
+
+										integrator_x = 0
+										integrating_x = False
 
 						'''
 						if mr_check and degrees_z > -5 and degrees_z < 2:
@@ -226,7 +258,7 @@ def main(redis_client):
 						if not mr_check:
 							integrating_z = False
 							integrator_z = 0
-							print('integrator_z CLEARED')
+							#print('integrator_z CLEARED')
 					
 					# Reset here at zero crossings? Do I need this?
 					if integrating_y and abs(gyro_y) < 0.03:
@@ -234,7 +266,7 @@ def main(redis_client):
 						#print(math.degrees(integrator_y))
 						integrator_y = 0
 						#print("===============")
-						print('integrator_y CLEARED')
+						#print('integrator_y CLEARED')
 				
 					if abs(gyro_x) > 0.03:
 						if not streamYaw:
@@ -268,7 +300,7 @@ def main(redis_client):
 						integrating_x = False
 						#print(math.degrees(integrator_x))
 						integrator_x = 0
-						print('integrator_x CLEARED')
+						#print('integrator_x CLEARED')
 						#print("===============")
 
 					if not streamYaw:

@@ -17,19 +17,19 @@ def integrate(row, vals, gyro_axis):
 	if abs(row[gyro_axis]) > SIGMAx3:
 
 		vals[1] += deltaT * row[gyro_axis]
-		vals[2] = 1
+		#vals[2] = 1
 
 	# if integrating and gyro is less than 3xStd
 	# Start counting up to 1/5 of a second
-	if(vals[2] == 1 and abs(row[gyro_axis]) <= SIGMAx3):
+	#if(vals[2] == 1 and abs(row[gyro_axis]) <= SIGMAx3):
 
-		vals[0] += 1
+		#vals[0] += 1
 
-	# if "stillness" detected for over 20 samples
+	# if "stillness" detected for over 50 samples
 	# Start over
-	if vals[0] >= 20:
+	#if vals[0] >= 50:
 		
-		reset(vals)
+		#reset(vals)
 		
 
 	return vals[1]
@@ -45,7 +45,7 @@ def main():
 	y_vals = x_vals
 	z_vals = x_vals
 
-	'''
+	
 	
 	files = glob.glob('subjectTests/01/Raw/*.csv')
 
@@ -79,7 +79,7 @@ def main():
 	filename_list = filename.rsplit('.')
 	new_filename = filename_list[0] + "_PRC" + ".csv"
 	df.to_csv(new_filename)
-	
+	'''
 
 if __name__ == '__main__':
 	main()
