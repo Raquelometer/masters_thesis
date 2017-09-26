@@ -8,12 +8,8 @@ from three_axis_integrator import three_axis_integrator
 import OSC
 from OSC import OSCMessage
 
-
-# add function for setting up sensor?
-# delete long commented out code
-# remove dector.py and other crap from repository, add detector_Rec, utils, integrator class
 # clean up and comment integration, preprocess, plot_data, 'plot multiple', detecor_sim, stream_data, fft, plotconfmat?
-# add README and root max patch
+# add README 
 
 def main(redis_client):
 
@@ -26,7 +22,6 @@ def main(redis_client):
 
 	print("OSC initialized")
 
-	
 	yawmsg.setAddress("/yaw")
 	gesture.setAddress("/gesType")
 	gesNum.setAddress("/gesNum")
@@ -35,7 +30,6 @@ def main(redis_client):
 	STD3x = 0.03
 	sampling_rate = 20000
 	
-
 	filter_flag = ts_api.TSS_FIND_ALL_KNOWN^ts_api.TSS_FIND_DNG
 	com_port = thesis_utils.get_comport()
 	device = ts_api.TSUSBSensor(com_port=com_port)
@@ -56,7 +50,6 @@ def main(redis_client):
 			device.close()
 			listening = False
 			print("Device closed. Session ended")
-
 		
 		if message == "START":
 
@@ -69,7 +62,6 @@ def main(redis_client):
 				#function for device setup in utils, take in interval
 
 				thesis_utils.setup_sensor(device, sampling_rate)
-
 
 				device.startStreaming()
 				device.startRecordingData()
@@ -85,7 +77,6 @@ def main(redis_client):
 				sample_count = 0
 
 				integrator = three_axis_integrator()
-				
 
 				# Variables for the medial rotation gesture
 				mr_counter = 0
@@ -104,7 +95,6 @@ def main(redis_client):
 
 				while streaming:
 
-
 					message = redis_client.lpop('sensor')
 
 					if message == 'STOP':
@@ -116,17 +106,14 @@ def main(redis_client):
 						
 						print("Not streaming. Enter new filename")
 
-
 					elif message == 'QUIT':
 						device.close()
 						listening = False
 						print("Device closed. Session ended")
 
-					
 					else: 
 						
 						point1 = device.getLatestStreamData(40000)[1]
-						
 						
 						# Handle writing to CSV
 						thesis_utils.data_to_csv(point1, opened, filename, sample_count)
@@ -134,7 +121,6 @@ def main(redis_client):
 						# maybe this can happen inside CSV function anyway
 						sample_count = sample_count + 1
 						opened = True
-
 
 						# counts a delay without calling sleep function
 						# this is for data collection purposes
@@ -147,13 +133,11 @@ def main(redis_client):
 						gyro_x = point1[0]
 						gyro_y = point1[1]
 						gyro_z = point1[2]
-
 						
 						if abs(gyro_z) > STD3x and not streamYaw and delayCounter == 0:
 						#if gyro_z < -0.03 and not streamYaw:
 							integrator.integrating_z  = True
 							
-
 						if integrator.integrating_z:
 
 							integrator.theta_z += gyro_z * deltaT
@@ -165,8 +149,6 @@ def main(redis_client):
 								# Start checking if it's a full in/out rotation
 								mr_check = True
 								
-
-
 							if mr_check:
 								# retroactivley check was degrees_z a minimum?if not, reset!
 								# positive crossing - find maximum
@@ -188,14 +170,12 @@ def main(redis_client):
 								# positive gyro value means foot has changed direction and is rotating back to home
 								# Basically this is detecting a zero crossing
 								elif gyro_z > STD3x:
-									
 
 									if not diff_check:
 
 										# save degrees at moment of zero crossing
 										curr_degrees_z = degrees_z
 										diff_check = 1
-
 
 									if diff_check > 0:
 
@@ -231,9 +211,7 @@ def main(redis_client):
 
 											integrator.reset_all_axes()
 											
-											delayCounter = 0
-											
-											
+											delayCounter = 0					
 
 						if abs(gyro_y) > STD3x and delayCounter == 0:
 							integrator.integrating_y = True
@@ -261,13 +239,10 @@ def main(redis_client):
 							if not mr_check:
 
 								integrator.reset_z()
-								
-						
+														
 						# Reset here at zero crossings? Do I need this?
 						if integrator.integrating_y and abs(gyro_y) < STD3x:
-							integrator.reset_y()
-							
-							
+							integrator.reset_y()							
 					
 						if abs(gyro_x) > STD3x:
 							if not streamYaw and delayCounter == 0:
@@ -286,21 +261,16 @@ def main(redis_client):
 								#time.sleep(1)
 								delayCounter += 1
 						
-
 						if integrator.integrating_x and abs(gyro_x) < STD3x:
-							integrator.reset_x()
-							
-							
+							integrator.reset_x()							
 
 						if streamYaw:
 							integrator.reset_z()
-
 							
 							integrator_YAW += gyro_z * deltaT
 							degrees_YAW = math.degrees(integrator_YAW)
 
 							thesis_utils.stream_to_max(c, yawmsg, degrees_YAW)
-
 
 	## Now close the port.
 	c.close()
